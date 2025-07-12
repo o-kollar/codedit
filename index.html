@@ -19,61 +19,47 @@
             height: 100%;
             width: 100%;
         }
+
+        /* --- Custom Scrollbar & UI Polish --- */
+        /* Works on Chrome, Edge, and Safari */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #d1d5db; /* stone-300 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: #9ca3af; /* stone-400 */
+        }
+        
+        /* ACE Editor Specific Scrollbar */
         .ace_scrollbar { -webkit-appearance: none; }
-        .ace_scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
-        .ace_scrollbar::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 4px; }
-        .ace_scrollbar::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+
+        /* Console Readability Enhancement */
+        #console-output > div:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.03);
+        }
     </style>
 </head>
 <body class="bg-stone-100 text-stone-800 h-screen flex flex-col antialiased overflow-hidden" 
-      x-data="editorApp()">
-    
-    <!-- NEW: Project Header -->
-    <header class="bg-white p-3 border-b border-stone-200 flex-shrink-0 flex items-center justify-between shadow-sm h-[3.5rem] z-10">
-        <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false">
-            <button @click="open = !open" class="flex items-center space-x-2 text-left p-2 -m-2 rounded-lg hover:bg-stone-100 transition-colors">
-                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 2h10v10H5V5z" />
-                 </svg>
-                <div class="flex-grow">
-                    <span class="font-semibold text-base" x-text="activeProject ? activeProject.name : 'Loading Projects...'"></span>
-                </div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-stone-400 transition-transform" :class="{'rotate-180': open}" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                </svg>
-            </button>
+      x-data="{ 
+          isOutputVisible: true, 
+          activeView: 'editor',
+          init() { 
+              this.$watch('isOutputVisible', () => this.$nextTick(() => { 
+                  if(window.headEditor) window.headEditor.resize();
+                  if(window.htmlEditor) window.htmlEditor.resize(); 
+                  if(window.scriptEditor) window.scriptEditor.resize(); 
+              })) 
+          } 
+      }">
 
-            <div x-show="open" @click.away="open = false" x-cloak
-                 class="absolute mt-2 w-72 bg-white rounded-lg shadow-xl border border-stone-200 overflow-hidden origin-top-left"
-                 x-transition:enter="transition ease-out duration-100"
-                 x-transition:enter-start="opacity-0 transform scale-95"
-                 x-transition:enter-end="opacity-100 transform scale-100"
-                 x-transition:leave="transition ease-in duration-75"
-                 x-transition:leave-start="opacity-100 transform scale-100"
-                 x-transition:leave-end="opacity-0 transform scale-95">
-                
-                 <div class="p-2 text-xs text-stone-500 border-b border-stone-200 bg-stone-50">My Projects</div>
-                 <div class="py-1 max-h-60 overflow-y-auto">
-                    <template x-for="project in projects" :key="project.id">
-                        <a href="#" @click.prevent="switchProject(project.id); open = false" class="flex items-center justify-between px-3 py-2 text-sm hover:bg-stone-100" :class="{ 'bg-indigo-50 text-indigo-700 font-semibold': activeProject && project.id === activeProject.id }">
-                            <span class="truncate" x-text="project.name"></span>
-                            <svg x-show="activeProject && project.id === activeProject.id" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-3 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                        </a>
-                    </template>
-                 </div>
-                 
-                 <div class="border-t border-stone-200 p-1 bg-stone-50">
-                     <a href="#" @click.prevent="createNewProject(); open = false" class="block w-full text-left px-3 py-2 text-sm hover:bg-stone-200 rounded-md">New Project...</a>
-                     <a href="#" @click.prevent="renameActiveProject(); open = false" class="block w-full text-left px-3 py-2 text-sm hover:bg-stone-200 rounded-md">Rename Current...</a>
-                     <a href="#" @click.prevent="deleteActiveProject()" class="block w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-100 rounded-md">Delete Current...</a>
-                 </div>
-            </div>
-        </div>
-    </header>
-
-    <div class="flex-grow flex flex-col md:flex-row h-[calc(100vh-3.5rem-2.5rem)] overflow-hidden p-3 gap-3">
+    <div class="flex-grow flex flex-col md:flex-row h-[calc(100%-3rem)] overflow-hidden p-3 gap-3">
         
         <!-- Editor Panel -->
         <div class="w-full flex flex-col h-full transition-all duration-300 bg-white rounded-xl shadow-sm overflow-hidden border border-stone-200"
@@ -84,57 +70,83 @@
              }"
              x-data="{ 
                 tab: 'html',
-                copyStatus: 'Copy',
+                copyStatus: 'Copy All',
                 copyCode() {
-                    const editor = this.tab === 'html' ? window.htmlEditor : window.scriptEditor;
-                    navigator.clipboard.writeText(editor.getValue()).then(() => {
-                        this.copyStatus = 'Copied!';
-                        setTimeout(() => this.copyStatus = 'Copy', 2000);
+                    navigator.clipboard.writeText(getFullSource()).then(() => {
+                        this.copyStatus = 'Copied All!';
+                        setTimeout(() => this.copyStatus = 'Copy All', 2000);
                     });
                  },
                 clearCode() { 
-                    const editor = this.tab === 'html' ? window.htmlEditor : window.scriptEditor;
-                    editor.setValue('', -1);
+                    if (confirm('Are you sure you want to clear all editors? This cannot be undone.')) {
+                        if (window.headEditor) window.headEditor.setValue('', -1);
+                        if (window.htmlEditor) window.htmlEditor.setValue('', -1);
+                        if (window.scriptEditor) window.scriptEditor.setValue('', -1);
+                    }
+                },
+                async importFromClipboard() {
+                    try {
+                        const text = await navigator.clipboard.readText();
+                        if (!text.trim()) {
+                            alert('Clipboard is empty.');
+                            return;
+                        }
+                        if (!window.parseAndLoadHtml(text)) {
+                             // The parseAndLoadHtml function shows its own alert on failure.
+                        }
+                    } catch (err) {
+                        console.error('Failed to read clipboard contents: ', err);
+                        alert('Could not read from clipboard. Please ensure you have granted the necessary permissions.');
+                    }
                 }
              }">
             <div class="flex justify-between items-center bg-stone-50 p-3 border-b border-stone-200 flex-shrink-0 flex-wrap gap-x-4 gap-y-2">
                 <div class="flex items-center space-x-2">
-                    <button @click="tab = 'html'" :class="{ 'bg-indigo-100 text-indigo-700 font-semibold': tab === 'html', 'text-stone-500 hover:bg-stone-200 hover:text-stone-700': tab !== 'html' }" class="px-4 py-1.5 rounded-lg text-sm transition-colors">HTML</button>
-                    <button @click="tab = 'script'" :class="{ 'bg-indigo-100 text-indigo-700 font-semibold': tab === 'script', 'text-stone-500 hover:bg-stone-200 hover:text-stone-700': tab !== 'script' }" class="px-4 py-1.5 rounded-lg text-sm transition-colors">Script</button>
+                    <button @click="tab = 'head'" :class="{ 'bg-indigo-100 text-indigo-700 font-semibold border-indigo-500': tab === 'head', 'text-stone-500 hover:bg-stone-200 hover:text-stone-700 border-transparent': tab !== 'head' }" class="px-4 py-1.5 rounded-t-lg text-sm transition-all border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300">Head</button>
+                    <button @click="tab = 'html'" :class="{ 'bg-indigo-100 text-indigo-700 font-semibold border-indigo-500': tab === 'html', 'text-stone-500 hover:bg-stone-200 hover:text-stone-700 border-transparent': tab !== 'html' }" class="px-4 py-1.5 rounded-t-lg text-sm transition-all border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300">HTML</button>
+                    <button @click="tab = 'script'" :class="{ 'bg-indigo-100 text-indigo-700 font-semibold border-indigo-500': tab === 'script', 'text-stone-500 hover:bg-stone-200 hover:text-stone-700 border-transparent': tab !== 'script' }" class="px-4 py-1.5 rounded-t-lg text-sm transition-all border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300">Script</button>
                 </div>
                  <div class="flex items-center space-x-2 md:space-x-4">
-                    <button @click="$refs.fileImporter.click()" class="text-stone-400 hover:text-indigo-600 text-sm font-medium flex items-center space-x-1.5 transition-colors p-2 rounded-lg hover:bg-stone-200" title="Import from HTML file">
+                    <button @click="document.getElementById('file-importer').click()" class="text-stone-400 hover:text-indigo-600 text-sm font-medium flex items-center space-x-1.5 transition-colors p-2 rounded-lg hover:bg-stone-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-400" title="Import from HTML file">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                         <span class="hidden md:inline">Import</span>
                     </button>
-                    <input type="file" x-ref="fileImporter" class="hidden" accept=".html" @change="importAsNewProject($event)">
-                    <button @click="exportToFile()" class="text-stone-400 hover:text-indigo-600 text-sm font-medium flex items-center space-x-1.5 transition-colors p-2 rounded-lg hover:bg-stone-200" title="Export as HTML file">
+                    <input type="file" id="file-importer" class="hidden" accept=".html" onchange="importFromFile(event)">
+                    <!-- MODIFIED: Added import from clipboard button -->
+                    <button @click="importFromClipboard()" class="text-stone-400 hover:text-indigo-600 text-sm font-medium flex items-center space-x-1.5 transition-colors p-2 rounded-lg hover:bg-stone-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-400" title="Import from clipboard">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        <span class="hidden md:inline">Paste</span>
+                    </button>
+                    <button @click="exportToFile()" class="text-stone-400 hover:text-indigo-600 text-sm font-medium flex items-center space-x-1.5 transition-colors p-2 rounded-lg hover:bg-stone-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-400" title="Export as HTML file">
                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                         <span class="hidden md:inline">Export</span>
                     </button>
                     <span class="border-l border-stone-200 h-5 hidden md:block"></span>
-                    <button @click="copyCode()" class="text-stone-400 hover:text-indigo-600 text-sm font-medium flex items-center space-x-1.5 transition-colors p-2 rounded-lg hover:bg-stone-200" title="Copy code">
+                    <button @click="copyCode()" class="text-stone-400 hover:text-indigo-600 text-sm font-medium flex items-center space-x-1.5 transition-colors p-2 rounded-lg hover:bg-stone-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-400" title="Copy all code">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                         <span x-text="copyStatus" class="hidden md:inline"></span>
                     </button>
-                     <button @click="clearCode()" class="text-stone-400 hover:text-indigo-600 text-sm font-medium flex items-center space-x-1.5 transition-colors p-2 rounded-lg hover:bg-stone-200" title="Clear code">
+                     <button @click="clearCode()" class="text-stone-400 hover:text-indigo-600 text-sm font-medium flex items-center space-x-1.5 transition-colors p-2 rounded-lg hover:bg-stone-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-400" title="Clear all code">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        <span class="hidden md:inline">Clear</span>
+                        <span class="hidden md:inline">Clear All</span>
                     </button>
                 </div>
             </div>
             
             <div class="flex-grow overflow-auto">
+                <div x-show="tab === 'head'" x-cloak class="h-full"><div id="head-editor" class="editor-container"></div></div>
                 <div x-show="tab === 'html'" class="h-full"><div id="html-editor" class="editor-container"></div></div>
                 <div x-show="tab === 'script'" x-cloak class="h-full"><div id="script-editor" class="editor-container"></div></div>
             </div>
 
             <div class="hidden md:flex justify-between items-center p-3 border-t border-stone-200 flex-shrink-0">
-                <button x-show="!isOutputVisible" @click="isOutputVisible = true" title="Show Output" class="text-stone-400 hover:text-indigo-600 transition-colors">
+                <button x-show="!isOutputVisible" @click="isOutputVisible = true" title="Show Output" class="text-stone-400 hover:text-indigo-600 transition-colors rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-400">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.27 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" /></svg>
                 </button>
                 <span class="flex-grow"></span> <!-- Spacer -->
-                <button id="run-button-desktop" @click="runCode(); activeView = 'output'" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-5 rounded-lg flex items-center space-x-2 transition-all duration-200 shadow-sm hover:shadow-md">
+                <button id="run-button-desktop" @click="runCode(); activeView = 'output'" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-5 rounded-lg flex items-center space-x-2 transition-all duration-200 shadow-sm hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-400">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
                     <span>Run</span>
                 </button>
@@ -147,20 +159,20 @@
              x-data="{ tab: 'preview' }" x-show="isOutputVisible" x-cloak>
             <div class="flex justify-between items-center bg-stone-50 p-3 border-b border-stone-200 flex-shrink-0 flex-wrap gap-2">
                 <div class="flex items-center space-x-2">
-                    <button @click="activeView = 'editor'; $nextTick(() => { if(window.htmlEditor) window.htmlEditor.resize(); if(window.scriptEditor) window.scriptEditor.resize(); })" title="Back to Editor" class="md:hidden text-stone-500 hover:text-indigo-600 transition-colors p-2 rounded-lg hover:bg-stone-200 mr-1">
+                    <button @click="activeView = 'editor'; $nextTick(() => { if(window.htmlEditor) window.htmlEditor.resize(); if(window.scriptEditor) scriptEditor.resize(); if(window.headEditor) headEditor.resize(); })" title="Back to Editor" class="md:hidden text-stone-500 hover:text-indigo-600 transition-colors p-2 rounded-lg hover:bg-stone-200 mr-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-400">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                            <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
                         </svg>
                     </button>
-                    <button @click="tab = 'preview'" :class="{ 'bg-indigo-100 text-indigo-700 font-semibold': tab === 'preview', 'text-stone-500 hover:bg-stone-200 hover:text-stone-700': tab !== 'preview' }" class="px-4 py-1.5 rounded-lg text-sm transition-colors">Preview</button>
-                    <button @click="tab = 'console'" :class="{ 'bg-indigo-100 text-indigo-700 font-semibold': tab === 'console', 'text-stone-500 hover:bg-stone-200 hover:text-stone-700': tab !== 'console' }" class="px-4 py-1.5 rounded-lg text-sm transition-colors">Console</button>
+                    <button @click="tab = 'preview'" :class="{ 'bg-indigo-100 text-indigo-700 font-semibold': tab === 'preview', 'text-stone-500 hover:bg-stone-200 hover:text-stone-700': tab !== 'preview' }" class="px-4 py-1.5 rounded-lg text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300">Preview</button>
+                    <button @click="tab = 'console'" :class="{ 'bg-indigo-100 text-indigo-700 font-semibold': tab === 'console', 'text-stone-500 hover:bg-stone-200 hover:text-stone-700': tab !== 'console' }" class="px-4 py-1.5 rounded-lg text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300">Console</button>
                 </div>
                 <div class="flex items-center space-x-2 md:space-x-4">
-                    <button id="clear-console-button" @click="tab === 'console' && ($refs.consoleOutput.innerHTML = '')" class="text-stone-400 hover:text-indigo-600 text-sm font-medium flex items-center space-x-1.5 transition-colors p-2 rounded-lg hover:bg-stone-200">
+                    <button id="clear-console-button" @click="tab === 'console' && ($refs.consoleOutput.innerHTML = '')" class="text-stone-400 hover:text-indigo-600 text-sm font-medium flex items-center space-x-1.5 transition-colors p-2 rounded-lg hover:bg-stone-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-400" title="Clear console">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         <span class="hidden sm:inline">Clear</span>
                     </button>
-                    <button @click="isOutputVisible = false" title="Hide Output" class="text-stone-400 hover:text-indigo-600 transition-colors p-2 rounded-lg hover:bg-stone-200">
+                    <button @click="isOutputVisible = false" title="Hide Output" class="text-stone-400 hover:text-indigo-600 transition-colors p-2 rounded-lg hover:bg-stone-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-400">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
                            <path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074L3.707 2.293zM10 12a2 2 0 110-4 2 2 0 010 4z" clip-rule="evenodd" />
                            <path d="M2 10C2 5.943 5.522 3 10 3a9.958 9.958 0 014.512 1.074l-1.473 1.473A3.987 3.987 0 0010 6a4 4 0 00-4 4 3.987 3.987 0 001.559 3.018L6.04 14.45A9.988 9.988 0 012 10z" />
@@ -168,18 +180,18 @@
                     </button>
                 </div>
             </div>
-            <div class="flex-grow bg-white overflow-hidden">
+            <div class="flex-grow bg-white overflow-auto">
                 <div x-show="tab === 'preview'" class="h-full bg-stone-100"><iframe id="preview-frame" class="w-full h-full border-0"></iframe></div>
-                <div x-show="tab === 'console'" x-cloak class="h-full bg-slate-800 p-4 overflow-auto font-mono text-sm"><div id="console-output" x-ref="consoleOutput"></div></div>
+                <div x-show="tab === 'console'" x-cloak class="h-full bg-slate-800 p-4 font-mono text-sm overflow-auto"><div id="console-output" x-ref="consoleOutput"></div></div>
             </div>
         </div>
     </div>
     
-    <button x-show="activeView === 'editor'" @click="runCode(); activeView = 'output'" class="md:hidden fixed bottom-6 right-6 z-20 bg-indigo-500 hover:bg-indigo-600 text-white font-bold w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl">
+    <button x-show="activeView === 'editor'" @click="runCode(); activeView = 'output'" class="md:hidden fixed bottom-6 right-6 z-20 bg-indigo-500 hover:bg-indigo-600 text-white font-bold w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-400">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
     </button>
     
-    <footer class="text-center p-3 text-xs text-stone-400 flex-shrink-0 h-[2.5rem]">
+    <footer class="text-center p-3 text-xs text-stone-400 flex-shrink-0">
         Web Editor with a Soft Touch
     </footer>
 
@@ -188,16 +200,11 @@
             db: null,
             open() {
                 return new Promise((resolve, reject) => {
-                    // DB version bumped to 2 to trigger upgrade for new project structure
-                    const request = indexedDB.open('CodeEditorDB', 2);
+                    const request = indexedDB.open('CodeEditorDB', 1);
                     request.onupgradeneeded = (event) => {
                         this.db = event.target.result;
-                        // For migration, delete old store and create the new one
-                        if (this.db.objectStoreNames.contains('code')) {
-                            this.db.deleteObjectStore('code');
-                        }
-                        if (!this.db.objectStoreNames.contains('projects')) {
-                            this.db.createObjectStore('projects', { keyPath: 'id' });
+                        if (!this.db.objectStoreNames.contains('code')) {
+                            this.db.createObjectStore('code', { keyPath: 'id' });
                         }
                     };
                     request.onsuccess = (event) => {
@@ -208,39 +215,22 @@
                     };
                 });
             },
-            async saveProject(project) {
+            async saveCode(head, html, script) {
                 if (!this.db) await this.open();
-                const transaction = this.db.transaction(['projects'], 'readwrite');
-                const store = transaction.objectStore('projects');
-                store.put(project);
+                const transaction = this.db.transaction(['code'], 'readwrite');
+                const store = transaction.objectStore('code');
+                store.put({ id: 'latest', head, html, script });
                 return transaction.complete;
             },
-            async loadProject(id) {
+            async loadCode() {
                 if (!this.db) await this.open();
-                const transaction = this.db.transaction(['projects'], 'readonly');
-                const store = transaction.objectStore('projects');
-                const request = store.get(id);
+                const transaction = this.db.transaction(['code'], 'readonly');
+                const store = transaction.objectStore('code');
+                const request = store.get('latest');
                 return new Promise((resolve) => {
                     request.onsuccess = () => { resolve(request.result); };
                     request.onerror = () => { resolve(null); };
                 });
-            },
-            async loadAllProjects() {
-                if (!this.db) await this.open();
-                const transaction = this.db.transaction(['projects'], 'readonly');
-                const store = transaction.objectStore('projects');
-                const request = store.getAll();
-                return new Promise((resolve) => {
-                    request.onsuccess = () => { resolve(request.result); };
-                    request.onerror = () => { resolve([]); };
-                });
-            },
-            async deleteProject(id) {
-                if (!this.db) await this.open();
-                const transaction = this.db.transaction(['projects'], 'readwrite');
-                const store = transaction.objectStore('projects');
-                store.delete(id);
-                return transaction.complete;
             }
         };
 
@@ -248,232 +238,174 @@
         const consoleOutput = document.getElementById('console-output');
 
         function getFullSource() {
+            const headCode = window.headEditor.getValue();
             const htmlCode = window.htmlEditor.getValue();
             const scriptCode = window.scriptEditor.getValue();
-            return `
+            return `<!DOCTYPE html>
+<html lang="en">
+<head>
+${headCode}
+</head>
+<body class="bg-stone-100 antialiased">
+    ${htmlCode}
+    <script>
+${scriptCode}
+    <\/script>
+</body>
+</html>`;
+        }
+        
+        window.runCode = () => {
+            const headCode = window.headEditor.getValue();
+            const htmlCode = window.htmlEditor.getValue();
+            const scriptCode = window.scriptEditor.getValue();
+
+            codeDB.saveCode(headCode, htmlCode, scriptCode).catch(err => console.error("Failed to save code:", err));
+            
+            consoleOutput.innerHTML = '';
+            
+            const source = `
                 <!DOCTYPE html>
-                <html lang="en">
+                <html>
                 <head>
-                    <meta charset="UTF-8">
-                    <title>Exported Creation</title>
-                    <style> @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'); body { font-family: 'Inter', sans-serif; } </style>
-                    <script src="https://cdn.tailwindcss.com"><\/script>
-                    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"><\/script>
+                    <script>
+                        const customConsole = (originalLog) => (...args) => {
+                            window.parent.postMessage({ source: 'iframe-console', type: originalLog.name, message: args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg) }, '*');
+                            originalLog.apply(console, args);
+                        };
+                        window.console.log = customConsole(window.console.log);
+                        window.console.error = customConsole(window.console.error);
+                        window.console.warn = customConsole(window.console.warn);
+                        window.console.info = customConsole(window.console.info);
+                        window.onerror = (message) => { window.parent.postMessage({ source: 'iframe-console', type: 'error', message: ['Uncaught Error: ' + message] }, '*'); };
+                    <\/script>
+                    ${headCode}
                 </head>
                 <body class="bg-stone-100 antialiased">
                     ${htmlCode}
                     <script>
-${scriptCode}
+                        try { ${scriptCode} } catch (e) { console.error(e.message); }
                     <\/script>
                 </body>
                 </html>`;
-        }
 
-        // --- NEW AlpineJS Component for main application state ---
-        function editorApp() {
-            return {
-                isOutputVisible: true,
-                activeView: 'editor',
-                projects: [],
-                activeProject: null,
+            previewFrame.src = 'data:text/html;charset=utf-8,' + encodeURIComponent(source);
+        };
+        
+        window.exportToFile = () => {
+            const source = getFullSource();
+            const blob = new Blob([source], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'my-creation.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
 
-                init() {
-                    this.loadInitialState();
-                    this.$watch('isOutputVisible', () => this.$nextTick(() => {
-                        if (window.htmlEditor) window.htmlEditor.resize();
-                        if (window.scriptEditor) window.scriptEditor.resize();
-                    }));
-                },
+        // MODIFIED: Reusable function to parse HTML and populate editors
+        function parseAndLoadHtml(contents) {
+            if (!contents || typeof contents !== 'string') {
+                alert('No content provided to import.');
+                return false;
+            }
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(contents, 'text/html');
                 
-                async loadInitialState() {
-                    await codeDB.open();
-                    const allProjects = await codeDB.loadAllProjects();
-                    if (allProjects.length === 0) {
-                        await this.createNewProject(true); // Create the very first project
-                    } else {
-                        this.projects = allProjects.sort((a,b) => b.id - a.id); // Sort by most recent
-                        const lastActiveId = localStorage.getItem('activeProjectId');
-                        let projectToLoad = this.projects.find(p => p.id == lastActiveId) || this.projects[0];
-                        this.setActiveProject(projectToLoad);
-                    }
-                },
+                const headContent = doc.head.innerHTML.trim();
                 
-                setActiveProject(project) {
-                    this.activeProject = project;
-                    localStorage.setItem('activeProjectId', project.id);
-                    window.htmlEditor.setValue(project.html || '', 1);
-                    window.scriptEditor.setValue(project.script || '', 1);
-                    this.runCode();
-                },
+                const bodyClone = doc.body.cloneNode(true);
+                const inlineScripts = Array.from(bodyClone.querySelectorAll('script:not([src])'));
+                const scriptContents = [];
 
-                async saveActiveProject() {
-                    if (!this.activeProject) return;
-                    this.activeProject.html = window.htmlEditor.getValue();
-                    this.activeProject.script = window.scriptEditor.getValue();
-                    await codeDB.saveProject(this.activeProject);
-                    // Update project in the list to keep names in sync
-                    const index = this.projects.findIndex(p => p.id === this.activeProject.id);
-                    if (index !== -1) this.projects[index] = this.activeProject;
-                },
+                inlineScripts.forEach(script => {
+                    scriptContents.push(script.textContent);
+                    script.remove();
+                });
 
-                async switchProject(projectId) {
-                    await this.saveActiveProject();
-                    const newProject = this.projects.find(p => p.id === projectId);
-                    if (newProject) this.setActiveProject(newProject);
-                },
+                const htmlContent = bodyClone.innerHTML.trim();
+                const combinedScriptContent = scriptContents.join('\n\n/* --- SCRIPT SEPARATOR --- */\n\n');
 
-                async createNewProject(isFirst = false) {
-                    if (!isFirst) await this.saveActiveProject();
-                    
-                    const defaultHtml = isFirst ? `<!-- Welcome to your first project! -->\n` + document.getElementById('initial-html-template').innerHTML : '';
-                    const defaultScript = isFirst ? document.getElementById('initial-script-template').innerHTML : '// Happy coding!';
-
-                    const newProject = {
-                        id: Date.now(),
-                        name: `Project ${new Date().toLocaleDateString()}`,
-                        html: defaultHtml,
-                        script: defaultScript,
-                    };
-
-                    await codeDB.saveProject(newProject);
-                    this.projects.unshift(newProject); // Add to start of list
-                    this.setActiveProject(newProject);
-                },
-
-                async renameActiveProject() {
-                    const newName = prompt("Enter a new name for your project:", this.activeProject.name);
-                    if (newName && newName.trim() !== "") {
-                        this.activeProject.name = newName.trim();
-                        await this.saveActiveProject();
-                    }
-                },
-
-                async deleteActiveProject() {
-                    if (confirm(`Are you sure you want to delete "${this.activeProject.name}"? This cannot be undone.`)) {
-                        const idToDelete = this.activeProject.id;
-                        await codeDB.deleteProject(idToDelete);
-                        this.projects = this.projects.filter(p => p.id !== idToDelete);
-                        
-                        if (this.projects.length > 0) {
-                            this.setActiveProject(this.projects[0]);
-                        } else {
-                            await this.createNewProject(true);
-                        }
-                    }
-                },
-
-                importAsNewProject(event) {
-                    const file = event.target.files[0];
-                    if (!file) return;
-
-                    const reader = new FileReader();
-                    reader.onload = async (e) => {
-                        const contents = e.target.result;
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(contents, 'text/html');
-                        
-                        const bodyClone = doc.body.cloneNode(true);
-                        const scripts = bodyClone.querySelectorAll('script');
-                        const scriptContents = [];
-
-                        scripts.forEach(script => {
-                            scriptContents.push(script.textContent);
-                            script.remove();
-                        });
-
-                        const htmlContent = bodyClone.innerHTML.trim();
-                        const combinedScriptContent = scriptContents.join('\n\n/* --- SCRIPT SEPARATOR --- */\n\n');
-
-                        const newProject = {
-                            id: Date.now(),
-                            name: file.name.replace(/\.html?$/i, ''),
-                            html: htmlContent,
-                            script: combinedScriptContent,
-                        };
-                        
-                        await codeDB.saveProject(newProject);
-                        this.projects.unshift(newProject);
-                        this.setActiveProject(newProject);
-                    };
-                    reader.readAsText(file);
-                    event.target.value = null; // Reset file input
-                },
-
-                exportToFile() {
-                    const source = getFullSource();
-                    const blob = new Blob([source], { type: 'text/html' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${this.activeProject.name || 'creation'}.html`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                },
-
-                runCode() {
-                    this.saveActiveProject(); // Auto-save on run
-
-                    consoleOutput.innerHTML = '';
-                    
-                    const source = `
-                        <!DOCTYPE html>
-                        <html>
-                        <head>
-                            <style> @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'); body { font-family: 'Inter', sans-serif; } </style>
-                            <script src="https://cdn.tailwindcss.com"><\/script>
-                            <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"><\/script>
-                            <script>
-                                const customConsole = (originalLog) => (...args) => { window.parent.postMessage({ source: 'iframe-console', type: originalLog.name, message: args.map(arg => JSON.stringify(arg, null, 2)) }, '*'); originalLog.apply(console, args); };
-                                window.console.log = customConsole(window.console.log); window.console.error = customConsole(window.console.error); window.console.warn = customConsole(window.console.warn); window.console.info = customConsole(window.console.info);
-                                window.onerror = (message) => { window.parent.postMessage({ source: 'iframe-console', type: 'error', message: ['Uncaught Error: ' + message] }, '*'); };
-                            <\/script>
-                        </head>
-                        <body class="bg-stone-100 antialiased">
-                            ${window.htmlEditor.getValue()}
-                            <script> try { ${window.scriptEditor.getValue()} } catch (e) { console.error(e.message); } <\/script>
-                        </body>
-                        </html>`;
-                    
-                    previewFrame.src = 'data:text/html;charset=utf-8,' + encodeURIComponent(source);
-                }
+                window.headEditor.setValue(headContent, 1);
+                window.htmlEditor.setValue(htmlContent, 1);
+                window.scriptEditor.setValue(combinedScriptContent, 1);
+                
+                runCode();
+                return true;
+            } catch (e) {
+                console.error("Failed to parse imported HTML:", e);
+                alert("The content could not be parsed as valid HTML.");
+                return false;
             }
         }
-        
+
+        // MODIFIED: Refactored to use the new parseAndLoadHtml function
+        window.importFromFile = (event) => {
+            const file = event.target.files[0];
+            if (!file) { return; }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                parseAndLoadHtml(e.target.result);
+            };
+            reader.readAsText(file);
+            event.target.value = null; 
+        };
+
         async function initializeEditor() {
             function createEditor(id, mode) {
                 const editor = ace.edit(id);
                 editor.setTheme("ace/theme/chrome");
                 editor.session.setMode(`ace/mode/${mode}`);
-                editor.setOptions({ fontSize: "15px", fontFamily: "Fira Code, monospace", enableBasicAutocompletion: true, enableLiveAutocompletion: true, highlightActiveLine: false, showGutter: true, showPrintMargin: false });
+                editor.setOptions({
+                    fontSize: "15px",
+                    fontFamily: "Fira Code, monospace",
+                    enableBasicAutocompletion: true,
+                    enableLiveAutocompletion: true,
+                    highlightActiveLine: false,
+                    showGutter: true,
+                    showPrintMargin: false,
+                    useWorker: false // Disable worker to prevent console errors in this environment
+                });
                 return editor;
             }
 
+            window.headEditor = createEditor('head-editor', 'html');
             window.htmlEditor = createEditor('html-editor', 'html');
             window.scriptEditor = createEditor('script-editor', 'javascript');
-        }
 
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.source === 'iframe-console') {
-                const logEntry = document.createElement('div');
-                const messages = event.data.message.join(' ');
-                let textColor = 'text-stone-300', typePrefix = 'LOG', typeColor = 'text-stone-400';
-                if (event.data.type === 'error') { textColor = 'text-red-400'; typePrefix = 'ERR'; typeColor = 'text-red-500' } 
-                else if (event.data.type === 'warn') { textColor = 'text-yellow-400'; typePrefix = 'WARN'; typeColor = 'text-yellow-500'; }
-                logEntry.className = `flex items-start border-b border-slate-700 py-2 ${textColor}`;
-                logEntry.innerHTML = `<span class="w-12 flex-shrink-0 mr-4 font-semibold ${typeColor}">[${typePrefix}]</span><pre class="whitespace-pre-wrap break-all">${messages}</pre>`;
-                consoleOutput.appendChild(logEntry);
-                consoleOutput.scrollTop = consoleOutput.scrollHeight;
-            }
-        });
+            const savedCode = await codeDB.loadCode();
+            
+            if (savedCode && savedCode.html) {
+                window.headEditor.setValue(savedCode.head || '', 1);
+                window.htmlEditor.setValue(savedCode.html, 1);
+                window.scriptEditor.setValue(savedCode.script, 1);
+            } else {
+                const initialHead =
+`<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soft UI To-Do App</title>
 
-        setTimeout(initializeEditor, 100);
-    </script>
+<!-- External libraries are loaded here -->
+<script src="https://cdn.tailwindcss.com"><\/script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"><\/script>
 
-    <!-- NEW: Templates for initial project content -->
-    <template id="initial-html-template">
-<div class="p-8 max-w-2xl mx-auto my-10 bg-white rounded-2xl shadow-lg" x-data="{
+<!-- Your custom styles for the preview go here -->
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    /* Set the base font and background for the preview */
+    body { 
+        font-family: 'Inter', sans-serif;
+        background-color: #f5f5f4; /* bg-stone-100 */
+    }
+<\/style>`;
+                
+                const initialHtml =
+`<div class="p-8 max-w-2xl mx-auto my-10 bg-white rounded-2xl shadow-lg" x-data="{
     todos: [
       { text: 'Learn Alpine.js', completed: true },
       { text: 'Build a beautiful project', completed: false },
@@ -486,7 +418,7 @@ ${scriptCode}
     
     <form @submit.prevent="if (newTodo.trim()) { todos.push({ text: newTodo.trim(), completed: false }); newTodo = '' }" class="mt-6 flex">
         <input type="text" x-model="newTodo" placeholder="What needs to be done?" class="border border-stone-200 rounded-l-lg px-4 py-2 w-full focus:ring-2 focus:ring-indigo-300 focus:outline-none transition">
-        <button type="submit" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-5 py-2 rounded-r-lg transition-colors">Add</button>
+        <button type="submit" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-5 py-2 rounded-r-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400">Add</button>
     </form>
 
     <ul class="mt-6 space-y-3">
@@ -507,15 +439,48 @@ ${scriptCode}
     <p class="mt-6 text-sm text-stone-500 text-center">
         You have <span class="font-bold" x-text="todos.filter(t => !t.completed).length"></span> tasks left.
     </p>
-</div>
-    </template>
-    <template id="initial-script-template">
-// The logic is handled by Alpine.js in the HTML.
+</div>`;
+                const initialScript = 
+`// The main logic is handled by Alpine.js in the HTML.
 // This script panel is for any additional vanilla JavaScript you want to run.
 
 console.log("Soft UI To-Do App Initialized!");
 console.warn("Try clicking a task to mark it complete.");
 console.error("This is how an error message looks in the console.");
-    </template>
+console.log({ detail: "Objects are logged nicely too.", value: 42 });`;
+                
+                window.headEditor.setValue(initialHead, 1);
+                window.htmlEditor.setValue(initialHtml, 1);
+                window.scriptEditor.setValue(initialScript, 1);
+            }
+            
+            window.runCode();
+        }
+
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.source === 'iframe-console') {
+                const logEntry = document.createElement('div');
+                const messages = event.data.message.join(' ');
+                let textColor = 'text-stone-300';
+                let typePrefix = 'LOG';
+                let typeColor = 'text-stone-400';
+                if (event.data.type === 'error') {
+                    textColor = 'text-red-400';
+                    typePrefix = 'ERR';
+                    typeColor = 'text-red-500'
+                } else if (event.data.type === 'warn') {
+                    textColor = 'text-yellow-400';
+                    typePrefix = 'WARN';
+                    typeColor = 'text-yellow-500';
+                }
+                logEntry.className = `flex items-start border-b border-slate-700 py-2 px-1 ${textColor}`;
+                logEntry.innerHTML = `<span class="w-12 flex-shrink-0 mr-4 font-semibold ${typeColor}">[${typePrefix}]</span><pre class="whitespace-pre-wrap break-all">${messages}</pre>`;
+                consoleOutput.appendChild(logEntry);
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            }
+        });
+
+        setTimeout(initializeEditor, 100);
+    </script>
 </body>
 </html>
